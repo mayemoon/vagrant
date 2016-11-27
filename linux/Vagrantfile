@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.define "linux-base-box"
+  config.vm.provider "virtualbox" do |vb|
+     vb.gui = true
+     vb.memory = "2048"
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    
+    add-apt-repository -y ppa:webupd8team/java
+    apt-get update
+    apt-get -y upgrade
+    echo debconf shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections 
+    echo debconf shared/accepted-oracle-license-v1-1 seen true | sudo debconf-set-selections
+    apt-get -y install oracle-java8-installer
+    
+    sudo apt-get install -y xfce4 virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11
+    sudo apt-get install gnome-icon-theme-full tango-icon-theme
+    sudo echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
+  
+    sudo wget --progress=bar:force -O /opt/eclipse-java-luna-SR2-linux-gtk-x86_64.tar.gz http://ftp.fau.de/eclipse/technology/epp/downloads/release/luna/SR2/eclipse-java-luna-SR2-linux-gtk-x86_64.tar.gz
+    cd /opt/ && sudo tar -zxvf eclipse-java-luna-SR2-linux-gtk-x86_64.tar.gz
+
+	sudo apt-get install -y language-pack-fr
+  
+	echo "LANG=fr_CH.utf8" > /etc/default/locale
+	echo "LC_MESSAGES=POSIX" >> /etc/default/locale
+
+	# clavier suisse
+	sudo loadkeys ch
+	
+	# TZ
+    echo "Setting TimeZone Europe/Zurich"
+	timedatectl set-timezone Europe/Zurich
+
+  SHELL
+  
+  # from now on as user vagrant
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+	
+	# ajout icone eclipse sur le bureau
+	mkdir ~/Desktop
+	cd ~/Desktop
+	ln -s /opt/eclipse/eclipse eclipse
+	# pour le clavier suisse
+	mkdir -p ~/.config/autostart
+
+  SHELL
+  
+  # clavier suisse au demarrage de X
+  config.vm.provision "file", run: "always", source: "./XkeyboardCH.desktop", destination: "~/.config/autostart/XkeyboardCH.desktop"
+
+end

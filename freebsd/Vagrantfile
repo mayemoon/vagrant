@@ -1,0 +1,53 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.guest = :freebsd
+  config.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+  config.vm.box = "freebsd/FreeBSD-11.0-RELEASE-p1"
+  config.ssh.shell = "sh"
+  config.vm.base_mac = "080027D14C66"
+
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "1024"]
+    vb.customize ["modifyvm", :id, "--cpus", "1"]
+    vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    
+    # TZ
+    echo "Setting TimeZone Europe/Zurich"
+	tzsetup Europe/Zurich
+	# Clavier
+	echo "Setting Mac Keyboard"
+	echo "keymap=swissgerman.macbook.acc.kdb" >> /etc/rc.conf
+	echo "allscreens_flags=MODE_279" >> /etc/rc.conf
+
+  SHELL
+
+  # JAVA, GIT
+  config.vm.provision "shell", inline: <<-SHELL
+
+	pkg install -y openjdk8-8.102.14_1 git-2.9.2_2
+
+  SHELL
+
+
+# trigger reload
+#  config.vm.provision :reload
+  
+config.vm.provision "shell", privileged: "false", inline: <<-SHELL
+  
+	echo "me:\\ " >> ~vagrant/.login_conf
+	echo "    :charset=UTF-8:\\ " >> ~vagrant/.login_conf
+	echo "    :lang=fr_CH.UTF-8:" >> ~vagrant/.login_conf
+	java -version
+	git --version
+	
+  SHELL
+   
+end
